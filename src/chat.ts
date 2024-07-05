@@ -1,33 +1,21 @@
-import { ChatGPTAPI } from 'chatgpt';
-export class Chat {
-  private chatAPI: ChatGPTAPI;
 
-  constructor(apikey: string) {
-    this.chatAPI = new ChatGPTAPI({
-      apiKey: apikey,
-      apiBaseUrl:
-        process.env.OPENAI_API_ENDPOINT || 'https://api.openai.com/v1',
-      completionParams: {
-        model: process.env.MODEL || 'gpt-3.5-turbo',
-        temperature: +(process.env.temperature || 0) || 1,
-        top_p: +(process.env.top_p || 0) || 1,
-        max_tokens: process.env.max_tokens
-          ? +process.env.max_tokens
-          : undefined,
-      },
+import { OpenAI } from "openai";
+export class Chat {
+  private openAi: OpenAI;
+
+  constructor(apiKey: string) {
+    this.openAi = new OpenAI({ 
+      apiKey,
+      defaultHeaders: {"OpenAI-Beta": "assistants=v2"}
     });
   }
 
   private generatePrompt = (patch: string) => {
-    const answerLanguage = process.env.LANGUAGE
-      ? `Answer me in ${process.env.LANGUAGE},`
-      : '';
-
     const prompt =
       process.env.PROMPT ||
         'Below is a code patch, please help me do a brief code review on it. Any bug risks and/or improvement suggestions are welcome:';
 
-    return `${prompt}, ${answerLanguage}:
+    return `${prompt}:
     ${patch}
     `;
   };
@@ -39,10 +27,34 @@ export class Chat {
 
     console.time('code-review cost');
     const prompt = this.generatePrompt(patch);
+    try {
+      const assistant = await this.openAi.beta.assistants.retrieve(
+        "asst_0BFZIjQq6DtazoHTxwGpgoI8"
+      );
 
-    const res = await this.chatAPI.sendMessage(prompt);
-
-    console.timeEnd('code-review cost');
-    return res.text;
+      const thread = await this.openAi.beta.threads.create();
+      let run = await this.openAi.beta.threads.runs.createAndPoll(
+        thread.id,
+        { 
+          assistant_id: assistant.id,
+          additional_instructions: prompt,
+          tool_choice: 'required'
+        }
+      );
+      if (run.status === 'completed') {
+        const GPTmessages = await this.openAi.beta.threads.messages.list(
+          run.thread_id
+        );
+        console.timeEnd('code-review cost');
+        // @ts-ignore: data is not defined in type definition
+        return GPTmessages.data[0].content[0].text.value
+      } else {
+        console.log(run.status);
+      }
+      throw new Error('GPT-4o request failed');
+    } catch (e) {
+      console.error('GPT-4o request failed', e);
+      return 'Error occurred during code review, please try again later.';
+    }
   };
 }

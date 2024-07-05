@@ -27,7 +27,8 @@
     "dotenv": "^16.0.3",
     "next": "^13.1.6",
     "node-fetch": "^3.3.0",
-    "probot": "^12.2.4"
+    "openai": "^4.52.3",
+    "probot": "^12.4.0"
   },
   "devDependencies": {
     "@rollup/plugin-commonjs": "^24.0.1",
