@@ -29,7 +29,7 @@ export class Chat {
     const prompt = this.generatePrompt(patch);
     try {
       const assistant = await this.openAi.beta.assistants.retrieve(
-        "asst_0BFZIjQq6DtazoHTxwGpgoI8"
+        "asst_Kbd0h4si27PFBnq3SGj7zZiZ"
       );
 
       const thread = await this.openAi.beta.threads.create();
