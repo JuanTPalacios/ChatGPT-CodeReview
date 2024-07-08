@@ -79,8 +79,6 @@ export const robot = (app: Probot) => {
         head: context.payload.pull_request.head.sha,
       });
 
-      console.log('data', data);
-
       let { files: changedFiles, commits } = data.data;
 
       if (context.payload.action === 'synchronize' && commits.length >= 2) {
@@ -128,6 +126,7 @@ export const robot = (app: Probot) => {
         }
         try {
           const res = await chat?.codeReview(patch);
+          console.log('review result:', res);
 
           if (!!res) {
             await context.octokit.pulls.createReviewComment({
