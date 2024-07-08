@@ -129,7 +129,6 @@ export const robot = (app: Probot) => {
           console.log('review result:', res);
 
           if (!!res) {
-            console.log(typeof res, Array.isArray(res));
             const resArr = JSON.parse(res);
             for (const res of resArr) {
               await context.octokit.pulls.createReviewComment({
@@ -139,7 +138,7 @@ export const robot = (app: Probot) => {
                 commit_id: commits[commits.length - 1].sha,
                 path: file.filename,
                 body: res.content,
-                position: res.line,
+                line: res.line,
               });
             }
           }
