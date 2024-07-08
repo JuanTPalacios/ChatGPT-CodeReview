@@ -29,7 +29,7 @@ const MAX_PATCH_COUNT = process.env.MAX_PATCH_LENGTH
             type: 'addition',
             content: aggregationBuffer.join('\n'),
             startLineNumber: bufferStartLineNumber,
-            endLineNumber: currentLineNumber - 1,
+            endLineNumber: currentLineNumber,
           });
           aggregationBuffer = [];
         }
@@ -50,7 +50,7 @@ const MAX_PATCH_COUNT = process.env.MAX_PATCH_LENGTH
             type: 'addition',
             content: aggregationBuffer.join('\n'),
             startLineNumber: bufferStartLineNumber,
-            endLineNumber: currentLineNumber - 1,
+            endLineNumber: currentLineNumber,
           });
           aggregationBuffer = [];
         }
@@ -198,8 +198,8 @@ export const robot = (app: Probot) => {
             if (change.type === 'deletion') {
               continue;
             }
-            // const res = await chat?.codeReview(change.content);
-            const res = 'This is a test';
+            const res = await chat?.codeReview(change.content, patch);
+            
             if (!!res) {
               await context.octokit.pulls.createReviewComment({
                 repo: repo.repo,

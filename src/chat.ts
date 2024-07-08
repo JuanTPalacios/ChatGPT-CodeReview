@@ -10,23 +10,24 @@ export class Chat {
     });
   }
 
-  private generatePrompt = (patch: string) => {
+  private generatePrompt = (change: string, patch: string) => {
     const prompt =
       process.env.PROMPT ||
-        'Below is a code patch, please help me do a brief code review on it. Any bug risks and/or improvement suggestions are welcome:';
+        'Below is a code change and the patch it belongs to, please help me do a brief code review on it. Any bug risks and/or improvement suggestions are welcome:';
 
     return `${prompt}:
-    ${patch}
+    change: ${change}
+    patch: ${patch}
     `;
   };
 
-  public codeReview = async (patch: string) => {
+  public codeReview = async (change: string, patch: string) => {
     if (!patch) {
       return '';
     }
 
     console.time('code-review cost');
-    const prompt = this.generatePrompt(patch);
+    const prompt = this.generatePrompt(change, patch);
     try {
       const assistant = await this.openAi.beta.assistants.retrieve(
         "asst_Kbd0h4si27PFBnq3SGj7zZiZ"
