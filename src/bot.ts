@@ -129,7 +129,7 @@ export const robot = (app: Probot) => {
           console.log('review result:', res);
 
           if (!!res) {
-            const resArr = JSON.parse(res);
+            const resArr = res;
             for (const res of resArr) {
               await context.octokit.pulls.createReviewComment({
                 repo: repo.repo,
