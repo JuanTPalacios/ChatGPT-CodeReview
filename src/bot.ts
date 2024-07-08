@@ -7,6 +7,39 @@ const MAX_PATCH_COUNT = process.env.MAX_PATCH_LENGTH
   ? +process.env.MAX_PATCH_LENGTH
   : Infinity;
 
+  interface Change {
+    type: 'addition' | 'deletion' | 'context';
+    content: string;
+    lineNumber: number;
+  }
+  
+  function parsePatch(patch: string): Change[] {
+    const lines = patch.split('\n');
+    const changes: Change[] = [];
+    let currentLineNumber = 0;
+  
+    for (const line of lines) {
+      if (line.startsWith('@@')) {
+        // Extract line number from header, e.g., @@ -1,3 +1,3 @@
+        const match = line.match(/\+(.*?)(,|$)/);
+        if (match) {
+          currentLineNumber = parseInt(match[1]) - 1; // Adjust because line numbers are 1-based
+        }
+      } else if (line.startsWith('+')) {
+        changes.push({ type: 'addition', content: line, lineNumber: currentLineNumber });
+        currentLineNumber++;
+      } else if (line.startsWith('-')) {
+        changes.push({ type: 'deletion', content: line, lineNumber: currentLineNumber });
+        // Do not increment line number for deletions
+      } else {
+        changes.push({ type: 'context', content: line, lineNumber: currentLineNumber });
+        currentLineNumber++;
+      }
+    }
+  
+    return changes;
+  }
+
 export const robot = (app: Probot) => {
   const loadChat = async (context: Context) => {
     if (process.env.OPENAI_API_KEY) {
@@ -79,8 +112,7 @@ export const robot = (app: Probot) => {
         head: context.payload.pull_request.head.sha,
       });
 
-      console.log('data', data);
-
+      
       let { files: changedFiles, commits } = data.data;
 
       if (context.payload.action === 'synchronize' && commits.length >= 2) {
@@ -126,19 +158,37 @@ export const robot = (app: Probot) => {
           );
           continue;
         }
+        const changes = parsePatch(patch);
         try {
-          const res = await chat?.codeReview(patch);
+          for (const change of changes) {
+            if (change.type === 'deletion') {
+              continue;
+            }
+            const res = await chat?.codeReview(change.content);
+            if (!!res) {
+              await context.octokit.pulls.createReviewComment({
+                repo: repo.repo,
+                owner: repo.owner,
+                pull_number: context.pullRequest().pull_number,
+                commit_id: commits[commits.length - 1].sha,
+                path: file.filename,
+                body: res,
+                position: change.lineNumber,
+              });
+            }
 
-          if (!!res) {
-            await context.octokit.pulls.createReviewComment({
-              repo: repo.repo,
-              owner: repo.owner,
-              pull_number: context.pullRequest().pull_number,
-              commit_id: commits[commits.length - 1].sha,
-              path: file.filename,
-              body: res,
-              position: patch.split('\n').length - 1,
-            });
+          // const res = await chat?.codeReview(patch);
+
+          // if (!!res) {
+          //   await context.octokit.pulls.createReviewComment({
+          //     repo: repo.repo,
+          //     owner: repo.owner,
+          //     pull_number: context.pullRequest().pull_number,
+          //     commit_id: commits[commits.length - 1].sha,
+          //     path: file.filename,
+          //     body: res,
+          //     position: patch.split('\n').length - 1,
+          //   });
           }
         } catch (e) {
           console.error(`review ${file.filename} failed`, e);
