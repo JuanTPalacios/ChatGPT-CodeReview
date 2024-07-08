@@ -113,6 +113,7 @@ export const robot = (app: Probot) => {
       for (let i = 0; i < changedFiles.length; i++) {
         const file = changedFiles[i];
         const patch = file.patch || '';
+        console.log(file);
 
         if (file.status !== 'modified' && file.status !== 'added') {
           continue;
