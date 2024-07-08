@@ -79,6 +79,8 @@ export const robot = (app: Probot) => {
         head: context.payload.pull_request.head.sha,
       });
 
+      console.log('data', data);
+
       let { files: changedFiles, commits } = data.data;
 
       if (context.payload.action === 'synchronize' && commits.length >= 2) {
@@ -113,7 +115,6 @@ export const robot = (app: Probot) => {
       for (let i = 0; i < changedFiles.length; i++) {
         const file = changedFiles[i];
         const patch = file.patch || '';
-        console.log({file});
 
         if (file.status !== 'modified' && file.status !== 'added') {
           continue;
