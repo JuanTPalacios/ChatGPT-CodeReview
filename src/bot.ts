@@ -129,15 +129,18 @@ export const robot = (app: Probot) => {
           console.log('review result:', res);
 
           if (!!res) {
-            await context.octokit.pulls.createReviewComment({
-              repo: repo.repo,
-              owner: repo.owner,
-              pull_number: context.pullRequest().pull_number,
-              commit_id: commits[commits.length - 1].sha,
-              path: file.filename,
-              body: res,
-              position: patch.split('\n').length - 1,
-            });
+            const resArr = JSON.parse(res);
+            for (const res of resArr) {
+              await context.octokit.pulls.createReviewComment({
+                repo: repo.repo,
+                owner: repo.owner,
+                pull_number: context.pullRequest().pull_number,
+                commit_id: commits[commits.length - 1].sha,
+                path: file.filename,
+                body: res.content,
+                position: res.line,
+              });
+            }
           }
         } catch (e) {
           console.error(`review ${file.filename} failed`, e);
