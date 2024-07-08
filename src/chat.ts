@@ -25,7 +25,7 @@ export class Chat {
       return '';
     }
 
-    console.time('code-review cost');
+    console.time('code-review cost E');
     const prompt = this.generatePrompt(patch);
     try {
       const assistant = await this.openAi.beta.assistants.retrieve(
@@ -45,7 +45,7 @@ export class Chat {
         const GPTmessages = await this.openAi.beta.threads.messages.list(
           run.thread_id
         );
-        console.timeEnd('code-review cost');
+        console.timeEnd('code-review cost F');
         // @ts-ignore: data is not defined in type definition
         return GPTmessages.data[0].content[0].text.value
       } else {
