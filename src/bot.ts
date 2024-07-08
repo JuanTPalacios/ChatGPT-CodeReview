@@ -10,31 +10,64 @@ const MAX_PATCH_COUNT = process.env.MAX_PATCH_LENGTH
   interface Change {
     type: 'addition' | 'deletion' | 'context';
     content: string;
-    lineNumber: number;
+    startLineNumber: number;
+    endLineNumber: number;
   }
   
   function parsePatch(patch: string): Change[] {
     const lines = patch.split('\n');
     const changes: Change[] = [];
     let currentLineNumber = 0;
+    let aggregationBuffer = [];
+    let bufferStartLineNumber = 0;
   
     for (const line of lines) {
       if (line.startsWith('@@')) {
-        // Extract line number from header, e.g., @@ -1,3 +1,3 @@
+        // Flush any pending additions as a single change
+        if (aggregationBuffer.length > 0) {
+          changes.push({
+            type: 'addition',
+            content: aggregationBuffer.join('\n'),
+            startLineNumber: bufferStartLineNumber,
+            endLineNumber: currentLineNumber - 1,
+          });
+          aggregationBuffer = [];
+        }
+  
         const match = line.match(/\+(.*?)(,|$)/);
         if (match) {
           currentLineNumber = parseInt(match[1]) - 1; // Adjust because line numbers are 1-based
         }
       } else if (line.startsWith('+')) {
-        changes.push({ type: 'addition', content: line, lineNumber: currentLineNumber });
+        if (aggregationBuffer.length === 0) {
+          bufferStartLineNumber = currentLineNumber;
+        }
+        aggregationBuffer.push(line);
         currentLineNumber++;
-      } else if (line.startsWith('-')) {
-        changes.push({ type: 'deletion', content: line, lineNumber: currentLineNumber });
-        // Do not increment line number for deletions
       } else {
-        changes.push({ type: 'context', content: line, lineNumber: currentLineNumber });
-        currentLineNumber++;
+        if (aggregationBuffer.length > 0) {
+          changes.push({
+            type: 'addition',
+            content: aggregationBuffer.join('\n'),
+            startLineNumber: bufferStartLineNumber,
+            endLineNumber: currentLineNumber - 1,
+          });
+          aggregationBuffer = [];
+        }
+        if (!line.startsWith('-')) {
+          currentLineNumber++;
+        }
       }
+    }
+  
+    // Flush any remaining additions
+    if (aggregationBuffer.length > 0) {
+      changes.push({
+        type: 'addition',
+        content: aggregationBuffer.join('\n'),
+        startLineNumber: bufferStartLineNumber,
+        endLineNumber: currentLineNumber - 1,
+      });
     }
   
     return changes;
@@ -159,12 +192,14 @@ export const robot = (app: Probot) => {
           continue;
         }
         const changes = parsePatch(patch);
+        console.log('changes', changes);
         try {
           for (const change of changes) {
             if (change.type === 'deletion') {
               continue;
             }
-            const res = await chat?.codeReview(change.content);
+            // const res = await chat?.codeReview(change.content);
+            const res = 'This is a test';
             if (!!res) {
               await context.octokit.pulls.createReviewComment({
                 repo: repo.repo,
@@ -173,7 +208,7 @@ export const robot = (app: Probot) => {
                 commit_id: commits[commits.length - 1].sha,
                 path: file.filename,
                 body: res,
-                position: change.lineNumber,
+                position: change.endLineNumber,
               });
             }
 
