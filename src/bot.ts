@@ -129,17 +129,19 @@ export const robot = (app: Probot) => {
           console.log('review result:', res);
 
           if (!!res) {
+            console.log(typeof res, Array.isArray(res));
             const resArr = res;
             for (const res of resArr) {
-              await context.octokit.pulls.createReviewComment({
-                repo: repo.repo,
-                owner: repo.owner,
-                pull_number: context.pullRequest().pull_number,
-                commit_id: commits[commits.length - 1].sha,
-                path: file.filename,
-                body: res.content,
-                position: res.line,
-              });
+              console.log('res:', res);
+              // await context.octokit.pulls.createReviewComment({
+              //   repo: repo.repo,
+              //   owner: repo.owner,
+              //   pull_number: context.pullRequest().pull_number,
+              //   commit_id: commits[commits.length - 1].sha,
+              //   path: file.filename,
+              //   body: res.content,
+              //   position: res.line,
+              // });
             }
           }
         } catch (e) {
