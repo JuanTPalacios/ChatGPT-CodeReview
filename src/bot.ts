@@ -132,16 +132,15 @@ export const robot = (app: Probot) => {
             console.log(typeof res, Array.isArray(res));
             const resArr = JSON.parse(res);
             for (const res of resArr) {
-              console.log('res:', res);
-              // await context.octokit.pulls.createReviewComment({
-              //   repo: repo.repo,
-              //   owner: repo.owner,
-              //   pull_number: context.pullRequest().pull_number,
-              //   commit_id: commits[commits.length - 1].sha,
-              //   path: file.filename,
-              //   body: res.content,
-              //   position: res.line,
-              // });
+              await context.octokit.pulls.createReviewComment({
+                repo: repo.repo,
+                owner: repo.owner,
+                pull_number: context.pullRequest().pull_number,
+                commit_id: commits[commits.length - 1].sha,
+                path: file.filename,
+                body: res.content,
+                position: res.line,
+              });
             }
           }
         } catch (e) {
