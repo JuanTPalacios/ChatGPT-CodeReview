@@ -156,6 +156,7 @@ export const robot = (app: Probot) => {
           if (file.filename.includes('questions')) {
             assistantId = assistants.theory;
           }
+          console.log('patch', patch);
           const res = await chat?.codeReview(patch, assistantId);
           console.log('review result:', res);
           // res is a string which should be a json of an array of comments but may have text before or after
