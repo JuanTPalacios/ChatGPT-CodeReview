@@ -9,6 +9,30 @@ const MAX_PATCH_COUNT = process.env.MAX_PATCH_LENGTH
   ? +process.env.MAX_PATCH_LENGTH
   : Infinity;
 
+function extractAndParseJsonArray(res: string): any[] | null {
+  // Step 1: Identify JSON Start
+  const startIndex = res.indexOf('[');
+  // Step 2: Identify JSON End
+  const endIndex = res.lastIndexOf(']');
+
+  if (startIndex === -1 || endIndex === -1 || startIndex >= endIndex) {
+    console.error('Invalid JSON format');
+    return null;
+  }
+
+  // Step 3: Extract JSON
+  const jsonArrayStr = res.substring(startIndex, endIndex + 1);
+
+  try {
+    // Step 4: Parse JSON
+    const jsonArray = JSON.parse(jsonArrayStr);
+    return jsonArray;
+  } catch (error) {
+    console.error('Error parsing JSON:', error);
+    return null;
+  }
+}
+
 export const robot = (app: Probot) => {
   const loadChat = async (context: Context) => {
     if (process.env.OPENAI_API_KEY) {
@@ -134,9 +158,12 @@ export const robot = (app: Probot) => {
           }
           const res = await chat?.codeReview(patch, assistantId);
           console.log('review result:', res);
+          // res is a string which should be a json of an array of comments but may have text before or after
+          //, i need to remove any text before or after the json array and then parse it
+
 
           if (!!res) {
-            const resArr = JSON.parse(res);
+            const resArr = extractAndParseJsonArray(res) || [];
             for (const res of resArr) {
               const lineForComment = findLineForComment(patch, res.line);
               await context.octokit.pulls.createReviewComment({
