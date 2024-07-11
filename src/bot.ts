@@ -139,6 +139,7 @@ export const robot = (app: Probot) => {
                 path: file.filename,
                 body: res.content,
                 line: res.line,
+                side: 'RIGHT',
               });
             }
           }
