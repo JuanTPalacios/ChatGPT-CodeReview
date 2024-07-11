@@ -2,6 +2,7 @@ import { Context, Probot } from 'probot';
 
 import { Chat } from './chat.js';
 import { findLineForComment } from './parsingLines.js';
+import assistants from './assisstants.js';
 
 const OPENAI_API_KEY = 'OPENAI_API_KEY';
 const MAX_PATCH_COUNT = process.env.MAX_PATCH_LENGTH
@@ -15,7 +16,6 @@ export const robot = (app: Probot) => {
     }
 
     const repo = context.repo();
-
     try {
       const { data } = (await context.octokit.request(
         'GET /repos/{owner}/{repo}/actions/variables/{name}',
@@ -31,12 +31,13 @@ export const robot = (app: Probot) => {
       }
 
       return new Chat(data.value);
-    } catch {
+    } catch (error) {
+      console.log(error);
       await context.octokit.issues.createComment({
         repo: repo.repo,
         owner: repo.owner,
         issue_number: context.pullRequest().pull_number,
-        body: `Seems you are using me but didn't get OPENAI_API_KEY seted in Variables/Secrets for this repo. you could follow [readme](https://github.com/anc95/ChatGPT-CodeReview) for more information`,
+        body: `Seems an error occurred while initializing chatbot, please check the configuration.`,
       });
       return null;
     }
@@ -46,6 +47,8 @@ export const robot = (app: Probot) => {
     ['pull_request.opened', 'pull_request.synchronize'],
     async (context) => {
       const repo = context.repo();
+      let assistantId = assistants[repo.repo] as string;
+      if (!assistantId) return 'no assistant found';
       const chat = await loadChat(context);
 
       if (!chat) {
@@ -126,8 +129,10 @@ export const robot = (app: Probot) => {
           continue;
         }
         try {
-          const assisstant = "asst_Kbd0h4si27PFBnq3SGj7zZiZ";
-          const res = await chat?.codeReview(patch, assisstant);
+          if (file.filename.includes('questions')) {
+            assistantId = assistants.theory;
+          }
+          const res = await chat?.codeReview(patch, assistantId);
           console.log('review result:', res);
 
           if (!!res) {
