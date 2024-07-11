@@ -1,6 +1,7 @@
 import { Context, Probot } from 'probot';
 
 import { Chat } from './chat.js';
+import { findLineForComment } from './parsingLines.js';
 
 const OPENAI_API_KEY = 'OPENAI_API_KEY';
 const MAX_PATCH_COUNT = process.env.MAX_PATCH_LENGTH
@@ -125,12 +126,14 @@ export const robot = (app: Probot) => {
           continue;
         }
         try {
-          const res = await chat?.codeReview(patch);
+          const assisstant = "asst_Kbd0h4si27PFBnq3SGj7zZiZ";
+          const res = await chat?.codeReview(patch, assisstant);
           console.log('review result:', res);
 
           if (!!res) {
             const resArr = JSON.parse(res);
             for (const res of resArr) {
+              const lineForComment = findLineForComment(patch, res.line);
               await context.octokit.pulls.createReviewComment({
                 repo: repo.repo,
                 owner: repo.owner,
@@ -138,7 +141,7 @@ export const robot = (app: Probot) => {
                 commit_id: commits[commits.length - 1].sha,
                 path: file.filename,
                 body: res.content,
-                line: res.line,
+                line: lineForComment,
                 side: 'RIGHT',
               });
             }

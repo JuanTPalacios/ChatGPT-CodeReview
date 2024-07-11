@@ -20,7 +20,7 @@ export class Chat {
     `;
   };
 
-  public codeReview = async (patch: string) => {
+  public codeReview = async (patch: string, assisstant: string) => {
     if (!patch) {
       return '';
     }
@@ -29,7 +29,7 @@ export class Chat {
     const prompt = this.generatePrompt(patch);
     try {
       const assistant = await this.openAi.beta.assistants.retrieve(
-        "asst_Kbd0h4si27PFBnq3SGj7zZiZ"
+        assisstant
       );
 
       const thread = await this.openAi.beta.threads.create();
