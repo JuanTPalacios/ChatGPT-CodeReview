@@ -6,6 +6,7 @@
  */
 export function findLineForComment(patch: string, targetLine: number): number {
   // Parse the patch to identify added lines
+  console.log('patch:', patch);
   const addedLines = parseAddedLines(patch);
 
   // If the target line is directly within the added lines, it's valid
