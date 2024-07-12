@@ -1,6 +1,6 @@
 const config = {
   apps : [{
-    name      : 'Bot',
+    name      : 'Cody',
     script    : 'dist/index.js',
     interpreter_args : '-r dotenv/config',
     time: true
